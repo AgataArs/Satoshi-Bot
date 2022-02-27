@@ -18,10 +18,11 @@ namespace BotSatoszow
         // Na podstawie komendy dodaje nowy warning i/lub banuje uzytkownika na dany okres
 
         public static TelegramBotClient Client;
-        private static long ChatId = -737095746;
+        private static long ChatId = -632365671; //Wpisać chat id grupy docelowej (tzw. produkcyjnej)
         private static List<long> AdminUserIds = new List<long>() { 1900853433 };
-        private static JsonDatabase database = new JsonDatabase();8
-       
+        private static JsonDatabase database = new JsonDatabase();
+        private static User MeUser;
+        private const int WarningsForBans = 4;
 
         static async Task Main(string[] args)
         {
@@ -42,13 +43,12 @@ namespace BotSatoszow
                 receiverOptions,
                 cancellationToken: cts.Token);
 
-            var me = await Client.GetMeAsync();
+            MeUser = await Client.GetMeAsync();
 
-            Console.WriteLine($"Start listening for @{me.Username}");
+            Console.WriteLine($"Start listening for @{MeUser.Username}");
             Console.ReadLine();
 
             // Send cancellation request to stop bot
-            cts.Cancel();
 
         }
 
@@ -78,39 +78,48 @@ namespace BotSatoszow
                 {
                     // 1900853433
                     var warnedUserId = Regex.Match(update.Message.Text, @"\d*$").Value;
-                    //Czy taki uzytkownik jest na grupie
-                    var isUserInGroup = update.ChatMember.OldChatMember.Status;
-
-                    if (isUserInGroup != ChatMemberStatus.Member)
+                    ChatMember warnedUser = null;
+                    var longWarnedUserId = long.Parse(warnedUserId);
+                    try
                     {
-                        Console.WriteLine("Error.There is no such member in the group");
+                        warnedUser = await Client.GetChatMemberAsync(update.Message.Chat.Id, longWarnedUserId);
+                    }
+                    catch (Exception e)
+                    {
+                        // ignore - because the user does not exists.
                     }
 
+                    //Czy taki uzytkownik jest na grupie
+                    if (warnedUser == null) // nie ma
+                    {
+                        //Jesli nie to wyrzucic blad
+                        Console.WriteLine("Error.There is no such member in the group");
+                    }
+                    else // jest
+                    {
+                        Console.WriteLine("There is such a member in the group");
+                        //Jesli tak to dodac +1 do warningow w bazie danych dla tego uzytkownika
+                        database.AddWarningToUser(longWarnedUserId);
 
+                        await Client.DeleteMessageAsync(chatId, update.Message.MessageId);
 
+                        //Jesli ma wiecej warningow niz x to banuj
 
+                        //await Client.UnbanChatMemberAsync(chatId, longWarnedUserId);
+                        if (database.UserDataDictionary[longWarnedUserId].WarningsCount >= WarningsForBans)
+                        {
+                            await Client.BanChatMemberAsync(chatId, longWarnedUserId, DateTime.Now.AddYears(3));
+                            await Client.SendTextMessageAsync(chatId, $"User {warnedUser.User.FirstName} {warnedUser.User.LastName} (${warnedUser.User?.Username}) has been banned. ");
+                        }
+                        else
+                        {
+                            await Client.SendTextMessageAsync(chatId, $"User {warnedUser.User.FirstName} {warnedUser.User.LastName} (${warnedUser.User?.Username}) has been warned. " +
+                                $"{WarningsForBans - database.UserDataDictionary[longWarnedUserId].WarningsCount} for a ban.");
+                        }
 
-
-
-
-
-                    //Jesli nie to wyrzucic blad
-
-                    //Jesli tak to dodac +1 do warningow w bazie danych dla tego uzytkownika
-
-
-                    Console.WriteLine();
+                    }
                 }
-
-
             }
-
-            //// Echo received message text
-            //Message sentMessage = await Client.SendTextMessageAsync(
-            //    chatId: chatId,
-            //    text: "You said:\n" + messageText,
-            //    cancellationToken: cancellationToken);
-
         }
 
         static Task HandleErrorAsync(ITelegramBotClient Client, Exception exception, CancellationToken cancellationToken)

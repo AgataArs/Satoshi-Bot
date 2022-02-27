@@ -19,6 +19,19 @@ namespace BotSatoszow
             LoadCurrentDatabaseFromFile();
         }        
 
+        public void AddWarningToUser(long userId)
+        {
+            if(UserDataDictionary.ContainsKey(userId))
+            {
+                UserDataDictionary[userId].WarningsCount++;
+            }
+            else
+            {
+                UserDataDictionary[userId] = new UserData { Id = userId, WarningsCount = 1 };
+            }
+
+            File.WriteAllText(FilePath, JsonConvert.SerializeObject(UserDataDictionary));
+        }
 
         private void LoadCurrentDatabaseFromFile()
         {
@@ -27,10 +40,10 @@ namespace BotSatoszow
             if(fileExists)
             {
                 var fileContent = File.ReadAllText(FilePath);
-                var userDataList = JsonConvert.DeserializeObject<List<UserData>>(fileContent);
+                var userDataList = JsonConvert.DeserializeObject<Dictionary<long, UserData>>(fileContent);
                 if(userDataList != null && userDataList.Count != 0)
                 {
-                    UserDataDictionary = userDataList.ToDictionary(x => x.Id, x => x);
+                    UserDataDictionary = userDataList;
                 }
                 else
                 {
@@ -41,7 +54,7 @@ namespace BotSatoszow
             {
                 var fileStream = File.Create(FilePath);
                 fileStream.Dispose();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(new List<UserData>()));
+                File.WriteAllText(FilePath, JsonConvert.SerializeObject(new Dictionary<long, UserData>()));
             }
         }
 
