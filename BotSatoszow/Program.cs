@@ -14,19 +14,19 @@ namespace BotSatoszow
     class Program
     {
         // Bot po odpaleniu nasłuchuje nowych wiadomości do niego na grupie od wyznaczonych osób - OK.
-        // Posiada bazę danych użytkowników ID / ilość warningów 
-        // Na podstawie komendy dodaje nowy warning i/lub banuje uzytkownika na dany okres
+        // Posiada bazę danych użytkowników ID / ilość warningów - OK.
+        // Na podstawie komendy dodaje nowy warning i/lub banuje uzytkownika na dany okres - OK.
 
         public static TelegramBotClient Client;
-        private static long ChatId = -632365671; //Wpisać chat id grupy docelowej (tzw. produkcyjnej)
-        private static List<long> AdminUserIds = new List<long>() { 1900853433 };
+        private static long ChatId = -1234; //Wpisać chat id grupy docelowej (tzw. produkcyjnej np. -632365671)
+        private static List<long> AdminUserIds = new List<long>() { 1900853433 }; //id adminów
         private static JsonDatabase database = new JsonDatabase();
         private static User MeUser;
-        private const int WarningsForBans = 4;
+        private const int WarningsForBans = 3;
 
         static async Task Main(string[] args)
         {
-            Client = new TelegramBotClient("5288355324:AAFqjC2jalR_pQEOD77sz90ZdO5cDQr2QXU");
+            Client = new TelegramBotClient("1234"); // token bota - BotFather
             var chat = await Client.GetChatAsync(ChatId);
             
           
