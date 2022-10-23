@@ -13,26 +13,20 @@ namespace BotSatoszow
 {
     class Program
     {
-        // Bot po odpaleniu nasłuchuje nowych wiadomości do niego na grupie od wyznaczonych osób - OK.
-        // Posiada bazę danych użytkowników ID / ilość warningów - OK.
-        // Na podstawie komendy dodaje nowy warning i/lub banuje uzytkownika na dany okres - OK.
-
         public static TelegramBotClient Client;
-        private static long ChatId = -1234; //Wpisać chat id grupy docelowej (tzw. produkcyjnej np. -632365671)
-        private static List<long> AdminUserIds = new List<long>() { 1900853433 }; //id adminów
+        private static long ChatId = -1234; 
+        private static List<long> AdminUserIds = new List<long>() { 1900853433 }; //admin's id
         private static JsonDatabase database = new JsonDatabase();
         private static User MeUser;
         private const int WarningsForBans = 3;
 
         static async Task Main(string[] args)
         {
-            Client = new TelegramBotClient("1234"); // token bota - BotFather
+            Client = new TelegramBotClient("1234"); // token - BotFather
             var chat = await Client.GetChatAsync(ChatId);
             
-          
             using var cts = new CancellationTokenSource();
 
-            // StartReceiving does not block the caller thread. Receiving is done on the ThreadPool.
             var receiverOptions = new ReceiverOptions
             {
                 AllowedUpdates = { } // receive all update types
@@ -54,10 +48,9 @@ namespace BotSatoszow
 
         static async Task HandleUpdateAsync(ITelegramBotClient Client, Update update, CancellationToken cancellationToken)
         {
-            // Only process Message updates: https://core.telegram.org/bots/api#message
             if (update.Type != UpdateType.Message)
                 return;
-            // Only process text messages
+
             if (update.Message!.Type != MessageType.Text)
                 return;
 
@@ -66,14 +59,8 @@ namespace BotSatoszow
 
             if (chatId == ChatId && AdminUserIds.Contains(update.Message.From.Id))
             {
-                //Komendy zdefiniowane i ich parsowanie 
-
-                // example: /warn id
-
-
                 var isWarnCommand = messageText.StartsWith("/warn");
 
-                
                 if(isWarnCommand)
                 {
                     // 1900853433
@@ -89,23 +76,19 @@ namespace BotSatoszow
                         // ignore - because the user does not exists.
                     }
 
-                    //Czy taki uzytkownik jest na grupie
-                    if (warnedUser == null) // nie ma
+                    if (warnedUser == null) 
                     {
-                        //Jesli nie to wyrzucic blad
                         Console.WriteLine("Error.There is no such member in the group");
                     }
-                    else // jest
+                    else 
                     {
                         Console.WriteLine("There is such a member in the group");
-                        //Jesli tak to dodac +1 do warningow w bazie danych dla tego uzytkownika
+
                         database.AddWarningToUser(longWarnedUserId);
 
                         await Client.DeleteMessageAsync(chatId, update.Message.MessageId);
 
-                        //Jesli ma wiecej warningow niz x to banuj
-
-                        //await Client.UnbanChatMemberAsync(chatId, longWarnedUserId);
+                         //await Client.UnbanChatMemberAsync(chatId, longWarnedUserId);
                         if (database.UserDataDictionary[longWarnedUserId].WarningsCount >= WarningsForBans)
                         {
                             await Client.BanChatMemberAsync(chatId, longWarnedUserId, DateTime.Now.AddYears(3));
