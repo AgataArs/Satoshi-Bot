@@ -63,7 +63,6 @@ namespace BotSatoszow
 
                 if(isWarnCommand)
                 {
-                    // 1900853433
                     var warnedUserId = Regex.Match(update.Message.Text, @"\d*$").Value;
                     ChatMember warnedUser = null;
                     var longWarnedUserId = long.Parse(warnedUserId);
