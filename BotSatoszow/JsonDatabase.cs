@@ -12,7 +12,7 @@ namespace BotSatoszow
     {
         public Dictionary<long, UserData> UserDataDictionary;
 
-        private string FilePath = "./JsonDatabase.json";
+        private string FilePath = "yourfilepath";
 
         public JsonDatabase()
         {
